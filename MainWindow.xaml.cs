@@ -116,7 +116,7 @@ namespace HeroldAt {
         {
             var text = SearchText;
             if (string.IsNullOrEmpty(text)) {
-                MessageBox.Show("Der Suchtext darf nicht leer sein!", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Der Suchtext darf nicht leer sein!", "Error", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
 
