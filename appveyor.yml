@@ -3,6 +3,7 @@ image: Visual Studio 2019
 version: 1.0.{build}
 configuration: Release
 platform: Any CPU
+skip_tags: true             # to prevent a endless build loop
 
 before_build:
 - cmd: nuget restore
@@ -30,7 +31,6 @@ deploy:
   # artifact: /.*\.nupkg/            # upload all NuGet packages to release assets
   draft: false
   prerelease: false
-  skip_tags: true
   on:
     branch: master                   # release from master branch only
     # APPVEYOR_REPO_TAG: true          # deploy on tag push only
