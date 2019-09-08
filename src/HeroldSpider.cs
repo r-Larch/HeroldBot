@@ -12,10 +12,15 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace LarchSys.Bot {
     public class HeroldSpider : Spider {
+        public IBrowsingContext Browser { get; set; }
+
         public HeroldSpider()
         {
             Title = "BOT - herold.at Firmensuche";
             ExportFileName = "herold-export.csv";
+
+            var config = Configuration.Default.WithDefaultLoader();
+            Browser = BrowsingContext.New(config);
         }
 
 
@@ -33,49 +38,63 @@ namespace LarchSys.Bot {
         };
 
 
-        protected override async Task Search(string text)
+        protected override async Task Search(string search)
         {
             try {
                 Progress = 0;
-                var niceText = text.ToLower().Replace(" ", "-");
-                var url = $"https://www.herold.at/gelbe-seiten/was_{niceText}/";
-                var config = Configuration.Default.WithDefaultLoader();
-                var context = BrowsingContext.New(config);
-                SearchedLinks.Add(url);
-                var document = await context.OpenAsync(url);
 
-                var pageCount = PageCount = int.TryParse(document.QuerySelector(".pagination-result > div.row > div.d-none > span > b:nth-child(2)")?.TextContent, out var p) ? p : 1;
+                var document = await GetPage(search);
+                AddResults(GetListItems(document));
+                PageCount = GetPageCount(document);
 
-                AddResults(QueryInfos(document));
+                for (var i = 2; i <= PageCount; i++) {
+                    Progress = (int) ((i / (double) PageCount) * 100d);
 
-                for (var i = 2; i <= pageCount; i++) {
-                    Progress = (int) ((i / (double) pageCount) * 100d);
-
-                    var pageUrl = url + $"?page={i}";
-                    SearchedLinks.Add(pageUrl);
-                    var doc = await context.OpenAsync(pageUrl);
-                    AddResults(QueryInfos(doc));
+                    document = await GetPage(search, pageNum: i);
+                    AddResults(GetListItems(document));
                 }
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
 
-            IEnumerable<SearchResult> QueryInfos(IDocument doc)
-            {
-                var items = doc.QuerySelectorAll("#result-list-container .result-item");
 
-                foreach (var item in items) {
-                    var tel = item.QuerySelector("a[data-category=\"Telefonnummer_result\"]")?.GetAttribute("href")?.Replace("tel:", "") ?? string.Empty;
-                    yield return new SearchResult {
-                        Url = item.QuerySelector("meta[itemprop=\"url\"]").GetAttribute("content"),
-                        Name = item.QuerySelector("[itemprop=\"name\"]").TextContent,
-                        Category = item.QuerySelector(".result-item-category").TextContent,
-                        Address = item.QuerySelector(".address").TextContent,
-                        Tel = Regex.Replace(tel, @"^(\+\d{2})?(\d{3})(\d{4})(\d*)", "$1 $2 $3 $4").Trim(),
-                        Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src")
-                    };
-                }
+        private async Task<IDocument> GetPage(string searchText, int pageNum = 1)
+        {
+            var niceText = searchText.ToLower().Replace(" ", "-");
+            var url = $"https://www.herold.at/gelbe-seiten/was_{niceText}/";
+
+            if (pageNum > 1) {
+                url += $"?page={pageNum}";
+            }
+
+            SearchedLinks.Add(url);
+            var document = await Browser.OpenAsync(url);
+            return document;
+        }
+
+
+        private static int GetPageCount(IDocument listPage)
+        {
+            return int.TryParse(listPage.QuerySelector(".pagination-result > div.row > div.d-none > span > b:nth-child(2)")?.TextContent, out var p) ? p : 1;
+        }
+
+
+        private static IEnumerable<SearchResult> GetListItems(IDocument listPage)
+        {
+            var items = listPage.QuerySelectorAll("#result-list-container .result-item");
+
+            foreach (var item in items) {
+                var tel = item.QuerySelector("a[data-category=\"Telefonnummer_result\"]")?.GetAttribute("href")?.Replace("tel:", "") ?? string.Empty;
+                yield return new SearchResult {
+                    Url = item.QuerySelector("meta[itemprop=\"url\"]").GetAttribute("content"),
+                    Name = item.QuerySelector("[itemprop=\"name\"]").TextContent,
+                    Category = item.QuerySelector(".result-item-category").TextContent,
+                    Address = item.QuerySelector(".address").TextContent,
+                    Tel = Regex.Replace(tel, @"^(\+\d{2})?(\d{3})(\d{4})(\d*)", "$1 $2 $3 $4").Trim(),
+                    Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src")
+                };
             }
         }
     }

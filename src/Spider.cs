@@ -24,7 +24,7 @@ namespace LarchSys.Bot {
 
         public abstract Brush Background { get; }
         public abstract UIElement Logo { get; }
-        protected abstract Task Search([NotNull] string text);
+        protected abstract Task Search([NotNull] string search);
 
 
         public void Clear()
