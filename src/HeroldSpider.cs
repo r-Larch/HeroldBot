@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,7 +16,6 @@ using MessageBox = System.Windows.MessageBox;
 namespace LarchSys.Bot {
     public class HeroldSpider : Spider {
         public IBrowsingContext Browser { get; set; }
-        public Task WorkerTask { get; set; }
 
         public HeroldSpider()
         {
@@ -24,8 +24,6 @@ namespace LarchSys.Bot {
 
             var config = Configuration.Default.WithDefaultLoader();
             Browser = BrowsingContext.New(config);
-
-            WorkerTask = Task.CompletedTask;
         }
 
 
@@ -49,17 +47,27 @@ namespace LarchSys.Bot {
                 Progress = 0;
 
                 var document = await GetPage(search);
-                AddResults(GetListItems(document));
+                AddResults(GetListItems(document).ToArray());
                 PageCount = GetPageCount(document);
 
-                for (var i = 2; i <= PageCount; i++) {
-                    Progress = (int) ((i / (double) PageCount) * 100d);
+                var page = 1;
 
-                    document = await GetPage(search, pageNum: i);
-                    AddResults(GetListItems(document));
+                foreach (var batch in Enumerable.Range(2, PageCount - 1).Batch(20)) {
+                    await Task.WhenAll(
+                        batch.Select(async pageNum => {
+                                var document = await GetPage(search, pageNum);
+                                AddResults(GetListItems(document).ToArray());
+
+                                Interlocked.Increment(ref page);
+                                Progress = (int) ((page / (double) PageCount) * 100d);
+                            }
+                        )
+                    );
                 }
 
-                await WorkerTask;
+                foreach (var batch in Results.Batch(20)) {
+                    await Task.WhenAll(batch.Select(ScanDetailPage));
+                }
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -76,8 +84,8 @@ namespace LarchSys.Bot {
                 url += $"?page={pageNum}";
             }
 
-            SearchedLinks.Add(url);
             var document = await Browser.OpenAsync(url);
+            SearchedLinks.Add(url);
             return document;
         }
 
@@ -106,22 +114,6 @@ namespace LarchSys.Bot {
         }
 
 
-        protected void AddResults(IEnumerable<SearchResult> searchResults)
-        {
-            var results = searchResults.ToArray();
-
-            QueueDeepScan(results);
-
-            Results = new ObservableCollection<SearchResult>(Results.Concat(results));
-            ResultsCount = Results.Count;
-
-            void QueueDeepScan(params SearchResult[] x)
-            {
-                WorkerTask = WorkerTask.ContinueWith(_ => Task.WaitAll(x.Select(ScanDetailPage).ToArray()));
-            }
-        }
-
-
         private async Task ScanDetailPage(SearchResult result)
         {
             if (string.IsNullOrEmpty(result.Url)) {
@@ -135,6 +127,18 @@ namespace LarchSys.Bot {
 
             DeepScanCount++;
             ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
+        }
+
+
+        private void AddResults(SearchResult[] results)
+        {
+            // more efficient then Array.Concat
+            var r = new SearchResult[Results.Count + results.Length];
+            Results.CopyTo(r, 0);
+            results.CopyTo(r, Results.Count);
+
+            Results = new ObservableCollection<SearchResult>(r);
+            ResultsCount = Results.Count;
         }
     }
 }

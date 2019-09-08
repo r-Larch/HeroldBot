@@ -126,7 +126,12 @@ namespace LarchSys.Bot {
 
             QueueDeepScan(results);
 
-            Results = new ObservableCollection<SearchResult>(Results.Concat(results));
+            // more efficient then Array.Concat
+            var r = new SearchResult[Results.Count + results.Length];
+            Results.CopyTo(r, 0);
+            results.CopyTo(r, Results.Count);
+
+            Results = new ObservableCollection<SearchResult>(r);
             ResultsCount = Results.Count;
 
             void QueueDeepScan(params SearchResult[] x)
