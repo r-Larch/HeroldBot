@@ -30,6 +30,7 @@
         </Grid>
 
         <ProgressBar DockPanel.Dock="Top" Value="{Binding Progress}" Minimum="0" Maximum="100" Height="15" Margin="4" />
+        <ProgressBar DockPanel.Dock="Top" Value="{Binding ProgressDeepScan}" Minimum="0" Maximum="100" Height="15" Margin="4" />
 
         <StatusBar DockPanel.Dock="Bottom" Margin="0,0,0.333,0">
             <StatusBarItem>
@@ -68,7 +69,9 @@
                                 <DockPanel DockPanel.Dock="Top" Margin="5">
                                     <TextBlock DockPanel.Dock="Top" Text="{Binding Category}" />
                                     <TextBlock DockPanel.Dock="Top" Text="{Binding Address}" />
-                                    <TextBlock DockPanel.Dock="Top" Text="{Binding Tel}" />
+                                    <TextBlock DockPanel.Dock="Top">
+                                        <TextBlock Text="{Binding Tel}"></TextBlock> / <TextBlock Text="{Binding Email}"></TextBlock> / <TextBlock Text="{Binding Website}"></TextBlock>
+                                    </TextBlock>
                                 </DockPanel>
                             </DockPanel>
                         </DockPanel>

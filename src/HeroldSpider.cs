@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,6 +15,7 @@ using MessageBox = System.Windows.MessageBox;
 namespace LarchSys.Bot {
     public class HeroldSpider : Spider {
         public IBrowsingContext Browser { get; set; }
+        public Task WorkerTask { get; set; }
 
         public HeroldSpider()
         {
@@ -21,6 +24,8 @@ namespace LarchSys.Bot {
 
             var config = Configuration.Default.WithDefaultLoader();
             Browser = BrowsingContext.New(config);
+
+            WorkerTask = Task.CompletedTask;
         }
 
 
@@ -53,6 +58,8 @@ namespace LarchSys.Bot {
                     document = await GetPage(search, pageNum: i);
                     AddResults(GetListItems(document));
                 }
+
+                await WorkerTask;
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -96,6 +103,38 @@ namespace LarchSys.Bot {
                     Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src")
                 };
             }
+        }
+
+
+        protected void AddResults(IEnumerable<SearchResult> searchResults)
+        {
+            var results = searchResults.ToArray();
+
+            QueueDeepScan(results);
+
+            Results = new ObservableCollection<SearchResult>(Results.Concat(results));
+            ResultsCount = Results.Count;
+
+            void QueueDeepScan(params SearchResult[] x)
+            {
+                WorkerTask = WorkerTask.ContinueWith(_ => Task.WaitAll(x.Select(ScanDetailPage).ToArray()));
+            }
+        }
+
+
+        private async Task ScanDetailPage(SearchResult result)
+        {
+            if (string.IsNullOrEmpty(result.Url)) {
+                return;
+            }
+
+            var doc = await Browser.OpenAsync(result.Url);
+
+            result.Email = doc.QuerySelector("[itemprop=\"email\"]")?.TextContent;
+            result.Website = doc.QuerySelector("[data-category=\"Weblink\"]")?.GetAttribute("href");
+
+            DeepScanCount++;
+            ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
         }
     }
 }

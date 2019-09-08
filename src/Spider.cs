@@ -29,13 +29,21 @@ namespace LarchSys.Bot {
 
         public void Clear()
         {
+            Status = "--";
+            SearchText = "";
+
+            // reset normal scan
+            Progress = 0;
+            PageCount = 0;
+            ResultsCount = 0;
             SearchedLinks = new ObservableCollection<string>();
             Results = new ObservableCollection<SearchResult>();
-            Status = "--";
-            PageCount = 0;
-            Progress = 0;
-            ResultsCount = 0;
-            SearchText = "";
+
+            // reset deep scan
+            DeepScanCount = 0;
+            ProgressDeepScan = 0;
+
+            // reset buttons
             BtnSearchIsEnabled = true;
             BtnExportIsEnabled = false;
             BtnResetIsEnabled = false;
@@ -63,6 +71,8 @@ namespace LarchSys.Bot {
             BtnExportIsEnabled = true;
             BtnSearchIsEnabled = true;
             BtnResetIsEnabled = true;
+
+            MessageBox.Show("Suche erfolgreich beendet", "Success", MessageBoxButton.OK, MessageBoxImage.Asterisk);
         }
 
 
@@ -84,7 +94,7 @@ namespace LarchSys.Bot {
                     using var sw = new StreamWriter(fs, Encoding.UTF8);
 
                     await sw.WriteLineAsync(Row(
-                        "Kategorie", "Name", "Adresse", "Tel", "Url"
+                        "Kategorie", "Name", "Adresse", "Tel", "E-Mail", "Website", "Url"
                     ));
 
                     foreach (var _ in Results) {
@@ -93,6 +103,8 @@ namespace LarchSys.Bot {
                             _.Name,
                             _.Address,
                             _.Tel,
+                            _.Email,
+                            _.Website,
                             _.Url
                         ));
                     }
@@ -120,22 +132,17 @@ namespace LarchSys.Bot {
         }
 
 
-        protected void AddResults(IEnumerable<SearchResult> searchResults)
-        {
-            Results = new ObservableCollection<SearchResult>(Results.Concat(searchResults));
-            ResultsCount = Results.Count;
-        }
-
-
         #region Props
 
         private ObservableCollection<SearchResult> _results;
         private ObservableCollection<string> _searchedLinks;
         private string _searchText;
         private int _progress;
+        private int _progressDeepScan;
         private int _pageCount;
         private string _status;
         private int _resultsCount;
+        private int _deepScanCount;
         private bool _btnSearchIsEnabled;
         private bool _btnExportIsEnabled;
         private bool _btnResetIsEnabled;
@@ -190,6 +197,13 @@ namespace LarchSys.Bot {
                 OnPropertyChanged();
             }
         }
+        public int ProgressDeepScan {
+            get => _progressDeepScan;
+            set {
+                _progressDeepScan = value;
+                OnPropertyChanged();
+            }
+        }
         public int PageCount {
             get => _pageCount;
             set {
@@ -208,6 +222,13 @@ namespace LarchSys.Bot {
             get => _resultsCount;
             set {
                 _resultsCount = value;
+                OnPropertyChanged();
+            }
+        }
+        public int DeepScanCount {
+            get => _deepScanCount;
+            set {
+                _deepScanCount = value;
                 OnPropertyChanged();
             }
         }

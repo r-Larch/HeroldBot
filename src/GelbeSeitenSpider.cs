@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -13,6 +15,7 @@ using MessageBox = System.Windows.MessageBox;
 namespace LarchSys.Bot {
     internal class GelbeSeitenSpider : Spider {
         public IBrowsingContext Browser { get; set; }
+        public Task WorkerTask { get; set; }
 
         public GelbeSeitenSpider()
         {
@@ -21,6 +24,8 @@ namespace LarchSys.Bot {
 
             var config = Configuration.Default.WithDefaultLoader();
             Browser = BrowsingContext.New(config);
+
+            WorkerTask = Task.CompletedTask;
         }
 
 
@@ -55,6 +60,8 @@ namespace LarchSys.Bot {
                     document = await GetPage(search, pageNum: i);
                     AddResults(GetListItems(document));
                 }
+
+                await WorkerTask;
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -101,7 +108,7 @@ namespace LarchSys.Bot {
             var items = listPage.QuerySelectorAll("#gs_treffer .m08_teilnehmer");
             foreach (var x in items) {
                 yield return new SearchResult {
-                    Url = x.QuerySelector("meta[itemprop=\"url\"]")?.GetAttribute("href"),
+                    Url = x.QuerySelector("[itemprop=\"url\"]")?.GetAttribute("href"),
                     Name = x.QuerySelector("[itemprop=\"name\"]")?.TextContent?.Trim(),
                     Category = x.QuerySelector(".branchen_box span:nth-child(1)")?.TextContent,
                     Address = Regex.Replace(x.QuerySelector("address")?.TextContent ?? string.Empty, @"\s+", " ").Trim(),
@@ -110,6 +117,38 @@ namespace LarchSys.Bot {
                     Img = x.QuerySelector("[data-lazy-src]")?.GetAttribute("data-lazy-src")
                 };
             }
+        }
+
+
+        protected void AddResults(IEnumerable<SearchResult> searchResults)
+        {
+            var results = searchResults.ToArray();
+
+            QueueDeepScan(results);
+
+            Results = new ObservableCollection<SearchResult>(Results.Concat(results));
+            ResultsCount = Results.Count;
+
+            void QueueDeepScan(params SearchResult[] x)
+            {
+                WorkerTask = WorkerTask.ContinueWith(_ => Task.WaitAll(x.Select(ScanDetailPage).ToArray()));
+            }
+        }
+
+
+        private async Task ScanDetailPage(SearchResult result)
+        {
+            if (string.IsNullOrEmpty(result.Url)) {
+                return;
+            }
+
+            var doc = await Browser.OpenAsync(result.Url);
+
+            result.Email = doc.QuerySelector("[property=\"email\"]")?.GetAttribute("content");
+            result.Website = doc.QuerySelector("[property=\"url\"]")?.GetAttribute("href");
+
+            DeepScanCount++;
+            ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
         }
     }
 }
