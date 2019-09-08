@@ -54,7 +54,6 @@
     <Reference Include="System.Text.Encoding.CodePages, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Text.Encoding.CodePages.4.5.0\lib\net461\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
-    <Reference Include="System.Web" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -74,19 +73,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="GelbeSeitenWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
+    <Compile Include="src\GelbeSeitenSpider.cs" />
+    <Compile Include="src\HeroldSpider.cs" />
+    <Compile Include="src\SearchResult.cs" />
+    <Compile Include="src\Spider.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="GelbeSeitenWindow.xaml.cs">
-      <DependentUpon>GelbeSeitenWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Page Include="HeroldWindow.xaml">
+    <Page Include="SpiderWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -96,8 +91,8 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="HeroldWindow.xaml.cs">
-      <DependentUpon>HeroldWindow.xaml</DependentUpon>
+    <Compile Include="SpiderWindow.xaml.cs">
+      <DependentUpon>SpiderWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>

@@ -2,9 +2,6 @@
 
 
 namespace LarchSys.Bot {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window {
         public MainWindow()
         {
@@ -14,14 +11,12 @@ namespace LarchSys.Bot {
 
         private void GelbeSeiten_OnClick(object sender, RoutedEventArgs e)
         {
-            new GelbeSeitenWindow().Show();
-            Close();
+            new SpiderWindow(new GelbeSeitenSpider()) {Owner = this}.Show();
         }
 
         private void Herold_OnClick(object sender, RoutedEventArgs e)
         {
-            new HeroldWindow().Show();
-            Close();
+            new SpiderWindow(new HeroldSpider()) {Owner = this}.Show();
         }
     }
 }
