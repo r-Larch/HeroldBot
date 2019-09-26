@@ -68,7 +68,8 @@
                                 <TextBlock DockPanel.Dock="Top" Text="{Binding Name}" FontSize="30" />
                                 <DockPanel DockPanel.Dock="Top" Margin="5">
                                     <TextBlock DockPanel.Dock="Top" Text="{Binding Category}" />
-                                    <TextBlock DockPanel.Dock="Top" Text="{Binding Address}" />
+                                    <TextBlock DockPanel.Dock="Top" Text="{Binding Address.StreatLine}" />
+                                    <TextBlock DockPanel.Dock="Top" Text="{Binding Address.ZipLine}" />
                                     <TextBlock DockPanel.Dock="Top">
                                         <TextBlock Text="{Binding Tel}"></TextBlock> / <TextBlock Text="{Binding Email}"></TextBlock> / <TextBlock Text="{Binding Website}"></TextBlock>
                                     </TextBlock>

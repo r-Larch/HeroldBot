@@ -105,16 +105,18 @@ namespace LarchSys.Bot {
 
         private static IEnumerable<SearchResult> GetListItems(IDocument listPage)
         {
-            var items = listPage.QuerySelectorAll("#gs_treffer .m08_teilnehmer");
+            var items = listPage.QuerySelectorAll("#gs_treffer .mod-Treffer");
             foreach (var x in items) {
                 yield return new SearchResult {
-                    Url = x.QuerySelector("[itemprop=\"url\"]")?.GetAttribute("href"),
-                    Name = x.QuerySelector("[itemprop=\"name\"]")?.TextContent?.Trim(),
+                    Url = x.QuerySelector("a")?.GetAttribute("href"),
+                    Name = x.QuerySelector("[data-wipe-name]")?.TextContent?.Trim(),
                     Category = x.QuerySelector(".branchen_box span:nth-child(1)")?.TextContent,
-                    Address = Regex.Replace(x.QuerySelector("address")?.TextContent ?? string.Empty, @"\s+", " ").Trim(),
-                    //Tel = item.QuerySelector(".nummer")?.TextContent,
-                    Tel = x.QuerySelector("[itemprop=\"telephone\"]")?.TextContent?.Trim(),
-                    Img = x.QuerySelector("[data-lazy-src]")?.GetAttribute("data-lazy-src")
+                    Address = Address.Parse(Regex.Replace(x.QuerySelector("[data-wipe-name=\"Adresse\"]")?.TextContent ?? string.Empty, @"\s+", " ").Trim()),
+                    Tel = x.QuerySelector("[data-wipe-name=\"Kontaktdaten\"]")?.TextContent?.Trim(),
+                    Img = x.QuerySelector("[data-lazy-src]")?.GetAttribute("data-lazy-src"),
+
+                    Website = x.QuerySelector(".icon-homepage")?.ParentElement?.GetAttribute("href")?.Trim(),
+                    Email = Regex.Replace(x.QuerySelector(".icon-email")?.ParentElement?.GetAttribute("href")?.Trim() ?? string.Empty, @"mailto:([^?]*)\??.*", "$1")
                 };
             }
         }
@@ -124,7 +126,7 @@ namespace LarchSys.Bot {
         {
             var results = searchResults.ToArray();
 
-            QueueDeepScan(results);
+            // QueueDeepScan(results);
 
             // more efficient then Array.Concat
             var r = new SearchResult[Results.Count + results.Length];
@@ -134,26 +136,26 @@ namespace LarchSys.Bot {
             Results = new ObservableCollection<SearchResult>(r);
             ResultsCount = Results.Count;
 
-            void QueueDeepScan(params SearchResult[] x)
-            {
-                WorkerTask = WorkerTask.ContinueWith(_ => Task.WaitAll(x.Select(ScanDetailPage).ToArray()));
-            }
+            //void QueueDeepScan(params SearchResult[] x)
+            //{
+            //    WorkerTask = WorkerTask.ContinueWith(_ => Task.WaitAll(x.Select(ScanDetailPage).ToArray()));
+            //}
         }
 
 
-        private async Task ScanDetailPage(SearchResult result)
-        {
-            if (string.IsNullOrEmpty(result.Url)) {
-                return;
-            }
+        //private async Task ScanDetailPage(SearchResult result)
+        //{
+        //    if (string.IsNullOrEmpty(result.Url)) {
+        //        return;
+        //    }
 
-            var doc = await Browser.OpenAsync(result.Url);
+        //    var doc = await Browser.OpenAsync(result.Url);
 
-            result.Email = doc.QuerySelector("[property=\"email\"]")?.GetAttribute("content");
-            result.Website = doc.QuerySelector("[property=\"url\"]")?.GetAttribute("href");
+        //    result.Email = doc.QuerySelector("[property=\"email\"]")?.GetAttribute("content");
+        //    result.Website = doc.QuerySelector("[property=\"url\"]")?.GetAttribute("href");
 
-            DeepScanCount++;
-            ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
-        }
+        //    DeepScanCount++;
+        //    ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
+        //}
     }
 }

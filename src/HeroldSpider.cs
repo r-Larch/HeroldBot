@@ -106,7 +106,7 @@ namespace LarchSys.Bot {
                     Url = item.QuerySelector("meta[itemprop=\"url\"]").GetAttribute("content"),
                     Name = item.QuerySelector("[itemprop=\"name\"]").TextContent,
                     Category = item.QuerySelector(".result-item-category").TextContent,
-                    Address = item.QuerySelector(".address").TextContent,
+                    Address = Address.Parse(item.QuerySelector(".address").TextContent),
                     Tel = Regex.Replace(tel, @"^(\+\d{2})?(\d{3})(\d{4})(\d*)", "$1 $2 $3 $4").Trim(),
                     Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src")
                 };

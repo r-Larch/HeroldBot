@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -88,20 +87,22 @@ namespace LarchSys.Bot {
                     FileName = ExportFileName,
                 };
 
+
                 if (dialog.ShowDialog(Window) == System.Windows.Forms.DialogResult.OK) {
                     var file = new FileInfo(dialog.FileName);
                     using var fs = file.OpenWrite();
                     using var sw = new StreamWriter(fs, Encoding.UTF8);
 
                     await sw.WriteLineAsync(Row(
-                        "Kategorie", "Name", "Adresse", "Tel", "E-Mail", "Website", "Url"
+                        "Kategorie", "Name", "Adresse Straße", "Adresse PLZ", "Tel", "E-Mail", "Website", "Url"
                     ));
 
                     foreach (var _ in Results) {
                         await sw.WriteLineAsync(Row(
                             _.Category,
                             _.Name,
-                            _.Address,
+                            _.Address.StreatLine,
+                            _.Address.ZipLine,
                             _.Tel,
                             _.Email,
                             _.Website,
@@ -109,9 +110,13 @@ namespace LarchSys.Bot {
                         ));
                     }
 
-                    Status = $"{file.FullName} saved successful";
-                    MessageBox.Show(Status, "saved", MessageBoxButton.OK);
+                    sw.Close();
+
+                    Status = $"{file?.FullName} saved successful";
                 }
+
+
+                MessageBox.Show(Status, "saved", MessageBoxButton.OK);
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
