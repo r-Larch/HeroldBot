@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -83,7 +83,7 @@ namespace LarchSys.Bot {
                     AutoUpgradeEnabled = true,
                     CheckFileExists = false,
                     CheckPathExists = true,
-                    DefaultExt = ".cvs",
+                    DefaultExt = ".csv",
                     FileName = ExportFileName,
                 };
 
@@ -112,17 +112,16 @@ namespace LarchSys.Bot {
 
                     sw.Close();
 
-                    Status = $"{file?.FullName} saved successful";
+                    Status = $"{file.FullName} saved successful";
+
+                    MessageBox.Show(Status, "saved", MessageBoxButton.OK);
                 }
-
-
-                MessageBox.Show(Status, "saved", MessageBoxButton.OK);
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
             }
 
-            // creates a cvs row: "some value";"some value with one "" quote";"a value with newline \n"
+            // creates a csv row: "some value";"some value with one "" quote";"a value with newline \n"
             static string Row(params string[] x) => string.Join(";", x.Select(_ => $"\"{_?.Replace("\"", "\"\"")}\""));
         }
 
