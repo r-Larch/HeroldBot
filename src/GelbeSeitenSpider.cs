@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,6 +15,7 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace LarchSys.Bot {
     internal class GelbeSeitenSpider : Spider {
+        private BundesLänder _bundesLänder;
         public IBrowsingContext Browser { get; set; }
         public Task WorkerTask { get; set; }
 
@@ -21,6 +23,8 @@ namespace LarchSys.Bot {
         {
             Title = "BOT - gelbeseiten.de Firmensuche";
             ExportFileName = "gelbeseiten-export.csv";
+
+            _bundesLänder = new BundesLänder();
 
             var config = Configuration.Default.WithDefaultLoader();
             Browser = BrowsingContext.New(config);
@@ -86,32 +90,30 @@ namespace LarchSys.Bot {
 
         private static int GetPageCount(IDocument listPage)
         {
-            var pageCount = 1;
-            var paging = Regex.Replace(listPage.QuerySelector(".gs_titel p")?.TextContent ?? string.Empty, @"\s+", " ").Trim();
-            if (!string.IsNullOrEmpty(paging)) {
-                var match = Regex.Match(paging, @"Treffer (?<from>\d+) - (?<to>\d+) von (?<total>\d+)");
-                if (match.Success) {
-                    var from = int.Parse(match.Groups["from"].Value) - 1;
-                    var to = int.Parse(match.Groups["to"].Value);
-                    var total = int.Parse(match.Groups["total"].Value);
-                    var pageSize = to - from;
-                    pageCount = (int) Math.Ceiling((double) total / pageSize);
-                }
-            }
+            var from = (int.TryParse(listPage.QuerySelector("#loadMoreStartIndex")?.TextContent, out var f) ? f : 0) - 1;
+            var to = int.TryParse(listPage.QuerySelector("#loadMoreGezeigteAnzahl")?.TextContent, out var t) ? t : 0;
+            var total = int.TryParse(listPage.QuerySelector("#loadMoreGesamtzahl")?.TextContent, out var a) ? a : 0;
+
+            var pageSize = to - from;
+            var pageCount = (int) Math.Ceiling((double) total / pageSize);
 
             return pageCount;
         }
 
 
-        private static IEnumerable<SearchResult> GetListItems(IDocument listPage)
+        private IEnumerable<SearchResult> GetListItems(IDocument listPage)
         {
             var items = listPage.QuerySelectorAll("#gs_treffer .mod-Treffer");
+
             foreach (var x in items) {
+                var address = Address.Parse(Regex.Replace(x.QuerySelector("[data-wipe-name=\"Adresse\"]")?.TextContent ?? string.Empty, @"\s+", " ").Trim());
+                address.Update(_bundesLänder.Map);
+
                 yield return new SearchResult {
                     Url = x.QuerySelector("a")?.GetAttribute("href"),
                     Name = x.QuerySelector("[data-wipe-name]")?.TextContent?.Trim(),
                     Category = x.QuerySelector(".branchen_box span:nth-child(1)")?.TextContent,
-                    Address = Address.Parse(Regex.Replace(x.QuerySelector("[data-wipe-name=\"Adresse\"]")?.TextContent ?? string.Empty, @"\s+", " ").Trim()),
+                    Address = address,
                     Tel = x.QuerySelector("[data-wipe-name=\"Kontaktdaten\"]")?.TextContent?.Trim(),
                     Img = x.QuerySelector("[data-lazy-src]")?.GetAttribute("data-lazy-src"),
 

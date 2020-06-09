@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 
 
 namespace LarchSys.Bot {
@@ -15,10 +17,15 @@ namespace LarchSys.Bot {
 
     public class Address {
         public string StreatLine { get; set; }
-        public string ZipLine { get; set; }
+        public string Zip { get; set; }
+        public string Place { get; set; }
+        public string ZipLine => $"{Zip} {Place}";
+
+        public string Zone { get; set; }
+        public string Community { get; set; }
 
         private static Regex _regex;
-        private static Regex Regex => _regex ??= new Regex(@"(\d{4}\d*.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
+        private static Regex Regex => _regex ??= new Regex(@"(\d{4}\d*)(.*)$", RegexOptions.Multiline | RegexOptions.Compiled);
 
         public static Address Parse(string address)
         {
@@ -30,13 +37,28 @@ namespace LarchSys.Bot {
             if (match.Success) {
                 return new Address {
                     StreatLine = address.Substring(0, match.Groups[1].Index),
-                    ZipLine = match.Groups[1].Value
+                    Zip = match.Groups[1].Value,
+                    Place = match.Groups[2].Value,
                 };
             }
 
             return new Address {
                 StreatLine = address,
             };
+        }
+
+        public void Update(Dictionary<string, ZipZone> map)
+        {
+            var zip = Zip;
+
+            if (string.IsNullOrEmpty(zip)) {
+                return;
+            }
+
+            if (map.TryGetValue(zip, out var zone)) {
+                Community = zone.Community;
+                Zone = zone.Zone;
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
@@ -94,7 +94,7 @@ namespace LarchSys.Bot {
                     using var sw = new StreamWriter(fs, Encoding.UTF8);
 
                     await sw.WriteLineAsync(Row(
-                        "Kategorie", "Name", "Adresse Straße", "Adresse PLZ", "Tel", "E-Mail", "Website", "Url"
+                        "Kategorie", "Name", "Adresse Straße", "Adresse PLZ", "Adresse Gemeinde", "Adresse Zone", "Tel", "E-Mail", "Website", "Url"
                     ));
 
                     foreach (var _ in Results) {
@@ -103,6 +103,8 @@ namespace LarchSys.Bot {
                             _.Name,
                             _.Address.StreatLine,
                             _.Address.ZipLine,
+                            _.Address.Community,
+                            _.Address.Zone,
                             _.Tel,
                             _.Email,
                             _.Website,

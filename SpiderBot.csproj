@@ -74,6 +74,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="src\Batch.cs" />
+    <Compile Include="src\BundesLänder.cs" />
     <Compile Include="src\GelbeSeitenSpider.cs" />
     <Compile Include="src\HeroldSpider.cs" />
     <Compile Include="src\SearchResult.cs" />
@@ -122,12 +123,30 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <EmbeddedResource Include="Resources\Bayern.csv" />
+    <EmbeddedResource Include="Resources\Berlin.csv" />
+    <EmbeddedResource Include="Resources\Brandenburg.csv" />
+    <EmbeddedResource Include="Resources\Bremen.csv" />
+    <EmbeddedResource Include="Resources\Hamburg.csv" />
+    <EmbeddedResource Include="Resources\Hessen.csv" />
+    <EmbeddedResource Include="Resources\Mecklenburg-Vorpommern.csv" />
+    <EmbeddedResource Include="Resources\Nordrhein-Westfalen.csv" />
+    <EmbeddedResource Include="Resources\Thüringen.csv" />
+    <EmbeddedResource Include="Resources\Schleswig-Holstein.csv" />
+    <EmbeddedResource Include="Resources\Sachsen-Anhalt.csv" />
+    <EmbeddedResource Include="Resources\Sachsen.csv" />
+    <EmbeddedResource Include="Resources\Saarland.csv" />
+    <EmbeddedResource Include="Resources\Rheinland-Pfalz.csv" />
+    <EmbeddedResource Include="Resources\Niedersachsen.csv" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\Baden-Württemberg.csv" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Fody.6.0.0\build\Fody.targets" Condition="Exists('packages\Fody.6.0.0\build\Fody.targets')" />
