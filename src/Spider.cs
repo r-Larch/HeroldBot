@@ -69,19 +69,19 @@ namespace LarchSys.Bot {
             try {
                 _tokenSource = new CancellationTokenSource();
                 await Search(text, _tokenSource.Token);
+
+                Status = "Finish";
+                MessageBox.Show("Suche erfolgreich beendet", "Success", MessageBoxButton.OK, MessageBoxImage.Asterisk);
             }
             catch (OperationCanceledException) {
-                // Ignore
+                Status = "Aborted";
+                MessageBox.Show("Suche abgebrochen", "Abbruch", MessageBoxButton.OK, MessageBoxImage.Asterisk);
             }
-
-            Status = "Finish";
 
             BtnExportIsEnabled = true;
             BtnSearchIsEnabled = true;
             BtnResetIsEnabled = true;
             BtnCancelIsEnabled = false;
-
-            MessageBox.Show("Suche erfolgreich beendet", "Success", MessageBoxButton.OK, MessageBoxImage.Asterisk);
         }
 
 

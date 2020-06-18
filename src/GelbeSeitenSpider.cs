@@ -59,6 +59,7 @@ namespace LarchSys.Bot {
                 var page = 1;
 
                 foreach (var batch in Enumerable.Range(2, PageCount - 1).Batch(20)) {
+                    token.ThrowIfCancellationRequested();
                     await Task.WhenAll(
                         batch.Select(async pageNum => {
                                 var document = await GetPage(search, pageNum, token);
@@ -72,8 +73,12 @@ namespace LarchSys.Bot {
                 }
 
                 foreach (var batch in Results.Batch(20)) {
+                    token.ThrowIfCancellationRequested();
                     await Task.WhenAll(batch.Select(_ => ScanDetailPage(_, token)));
                 }
+            }
+            catch (OperationCanceledException) {
+                throw;
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -89,6 +94,8 @@ namespace LarchSys.Bot {
             if (pageNum > 1) {
                 url += $"/Seite-{pageNum}";
             }
+
+            token.ThrowIfCancellationRequested();
 
             SearchedLinks.Add(url);
             var document = await Browser.OpenAsync(url, cancellation: token);
@@ -139,6 +146,8 @@ namespace LarchSys.Bot {
             if (string.IsNullOrEmpty(result.Url)) {
                 return;
             }
+
+            token.ThrowIfCancellationRequested();
 
             var doc = await Browser.OpenAsync(result.Url, cancellation: token);
 

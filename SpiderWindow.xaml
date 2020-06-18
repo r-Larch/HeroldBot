@@ -26,7 +26,7 @@
                 <Button Margin="0 0 5 0" Name="BtnSearch" IsEnabled="{Binding BtnSearchIsEnabled}">Suchen</Button>
                 <Button Margin="0 0 5 0" Name="BtnExport" IsEnabled="{Binding BtnExportIsEnabled}">Exportieren</Button>
                 <Button Margin="0 0 5 0" Name="BtnReset" IsEnabled="{Binding BtnResetIsEnabled}">Reset</Button>
-                <Button Margin="0 0 0 0" Name="BtnCancel" IsEnabled="{Binding BtnCancelEnabled}">Abbrechen</Button>
+                <Button Margin="0 0 0 0" Name="BtnCancel" IsEnabled="{Binding BtnCancelIsEnabled}">Abbrechen</Button>
             </DockPanel>
         </Grid>
 
