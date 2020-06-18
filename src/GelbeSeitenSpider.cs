@@ -109,16 +109,18 @@ namespace LarchSys.Bot {
                 var address = Address.Parse(Regex.Replace(x.QuerySelector("[data-wipe-name=\"Adresse\"]")?.TextContent ?? string.Empty, @"\s+", " ").Trim());
                 address.Update(_bundesLänder.Map);
 
+                var id = x.QuerySelector("[data-realid]")?.GetAttribute("data-realid");
+
                 yield return new SearchResult {
-                    Url = x.QuerySelector("a")?.GetAttribute("href"),
+                    Url = $"https://www.gelbeseiten.de/gsbiz/{id}",
                     Name = x.QuerySelector("[data-wipe-name]")?.TextContent?.Trim(),
-                    Category = x.QuerySelector(".branchen_box span:nth-child(1)")?.TextContent,
+                    Category = x.QuerySelector(".mod-Treffer--besteBranche")?.TextContent?.Trim(),
                     Address = address,
                     Tel = x.QuerySelector("[data-wipe-name=\"Kontaktdaten\"]")?.TextContent?.Trim(),
                     Img = x.QuerySelector("[data-lazy-src]")?.GetAttribute("data-lazy-src"),
 
-                    Website = x.QuerySelector(".icon-homepage")?.ParentElement?.GetAttribute("href")?.Trim(),
-                    Email = Regex.Replace(x.QuerySelector(".icon-email")?.ParentElement?.GetAttribute("href")?.Trim() ?? string.Empty, @"mailto:([^?]*)\??.*", "$1")
+                    Website = x.QuerySelector(".contains-icon-homepage")?.GetAttribute("href")?.Trim(),
+                    Email = Regex.Replace(x.QuerySelector(".contains-icon-email")?.GetAttribute("href")?.Trim() ?? string.Empty, @"mailto:([^?]*)\??.*", "$1")
                 };
             }
         }
