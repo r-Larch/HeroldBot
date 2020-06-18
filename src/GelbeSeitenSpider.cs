@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,9 +16,8 @@ using MessageBox = System.Windows.MessageBox;
 
 namespace LarchSys.Bot {
     internal class GelbeSeitenSpider : Spider {
-        private BundesLänder _bundesLänder;
+        private readonly BundesLänder _bundesLänder;
         public IBrowsingContext Browser { get; set; }
-        public Task WorkerTask { get; set; }
 
         public GelbeSeitenSpider()
         {
@@ -28,8 +28,6 @@ namespace LarchSys.Bot {
 
             var config = Configuration.Default.WithDefaultLoader();
             Browser = BrowsingContext.New(config);
-
-            WorkerTask = Task.CompletedTask;
         }
 
 
@@ -49,23 +47,33 @@ namespace LarchSys.Bot {
         };
 
 
-        protected override async Task Search(string search)
+        protected override async Task Search(string search, CancellationToken token)
         {
             try {
                 Progress = 0;
 
-                var document = await GetPage(search);
-                AddResults(GetListItems(document));
+                var document = await GetPage(search, token: token);
+                AddResults(GetListItems(document, token).ToArray());
                 PageCount = GetPageCount(document);
 
-                for (var i = 2; i <= PageCount; i++) {
-                    Progress = (int) ((i / (double) PageCount) * 100d);
+                var page = 1;
 
-                    document = await GetPage(search, pageNum: i);
-                    AddResults(GetListItems(document));
+                foreach (var batch in Enumerable.Range(2, PageCount - 1).Batch(20)) {
+                    await Task.WhenAll(
+                        batch.Select(async pageNum => {
+                                var document = await GetPage(search, pageNum, token);
+                                AddResults(GetListItems(document, token).ToArray());
+
+                                Interlocked.Increment(ref page);
+                                Progress = (int) ((page / (double) PageCount) * 100d);
+                            }
+                        )
+                    );
                 }
 
-                await WorkerTask;
+                foreach (var batch in Results.Batch(20)) {
+                    await Task.WhenAll(batch.Select(_ => ScanDetailPage(_, token)));
+                }
             }
             catch (Exception e) {
                 MessageBox.Show(e.ToString(), e.Message, MessageBoxButton.OK, MessageBoxImage.Error);
@@ -73,7 +81,7 @@ namespace LarchSys.Bot {
         }
 
 
-        private async Task<IDocument> GetPage(string searchText, int pageNum = 1)
+        private async Task<IDocument> GetPage(string searchText, int pageNum = 1, CancellationToken token = default)
         {
             var niceText = Uri.EscapeUriString(searchText.ToLower());
             var url = $"https://www.gelbeseiten.de/Suche/{niceText}/Bundesweit";
@@ -83,7 +91,7 @@ namespace LarchSys.Bot {
             }
 
             SearchedLinks.Add(url);
-            var document = await Browser.OpenAsync(url);
+            var document = await Browser.OpenAsync(url, cancellation: token);
             return document;
         }
 
@@ -101,7 +109,7 @@ namespace LarchSys.Bot {
         }
 
 
-        private IEnumerable<SearchResult> GetListItems(IDocument listPage)
+        private IEnumerable<SearchResult> GetListItems(IDocument listPage, CancellationToken token)
         {
             var items = listPage.QuerySelectorAll("#gs_treffer .mod-Treffer");
 
@@ -126,12 +134,23 @@ namespace LarchSys.Bot {
         }
 
 
-        protected void AddResults(IEnumerable<SearchResult> searchResults)
+        private async Task ScanDetailPage(SearchResult result, CancellationToken token)
         {
-            var results = searchResults.ToArray();
+            if (string.IsNullOrEmpty(result.Url)) {
+                return;
+            }
 
-            // QueueDeepScan(results);
+            var doc = await Browser.OpenAsync(result.Url, cancellation: token);
 
+            result.Facebook = doc.QuerySelector(".icon-social_facebook")?.ParentElement?.GetAttribute("href");
+
+            DeepScanCount++;
+            ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
+        }
+
+
+        protected void AddResults(SearchResult[] results)
+        {
             // more efficient then Array.Concat
             var r = new SearchResult[Results.Count + results.Length];
             Results.CopyTo(r, 0);
@@ -139,27 +158,6 @@ namespace LarchSys.Bot {
 
             Results = new ObservableCollection<SearchResult>(r);
             ResultsCount = Results.Count;
-
-            //void QueueDeepScan(params SearchResult[] x)
-            //{
-            //    WorkerTask = WorkerTask.ContinueWith(_ => Task.WaitAll(x.Select(ScanDetailPage).ToArray()));
-            //}
         }
-
-
-        //private async Task ScanDetailPage(SearchResult result)
-        //{
-        //    if (string.IsNullOrEmpty(result.Url)) {
-        //        return;
-        //    }
-
-        //    var doc = await Browser.OpenAsync(result.Url);
-
-        //    result.Email = doc.QuerySelector("[property=\"email\"]")?.GetAttribute("content");
-        //    result.Website = doc.QuerySelector("[property=\"url\"]")?.GetAttribute("href");
-
-        //    DeepScanCount++;
-        //    ProgressDeepScan = (int) (((double) DeepScanCount / ResultsCount) * 100d);
-        //}
     }
 }

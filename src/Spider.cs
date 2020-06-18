@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
@@ -23,7 +24,7 @@ namespace LarchSys.Bot {
 
         public abstract Brush Background { get; }
         public abstract UIElement Logo { get; }
-        protected abstract Task Search([NotNull] string search);
+        protected abstract Task Search([NotNull] string search, CancellationToken token);
 
 
         public void Clear()
@@ -46,6 +47,7 @@ namespace LarchSys.Bot {
             BtnSearchIsEnabled = true;
             BtnExportIsEnabled = false;
             BtnResetIsEnabled = false;
+            BtnCancelIsEnabled = false;
         }
 
 
@@ -60,16 +62,24 @@ namespace LarchSys.Bot {
             BtnSearchIsEnabled = false;
             BtnResetIsEnabled = false;
             BtnExportIsEnabled = false;
+            BtnCancelIsEnabled = true;
 
             Status = "Running";
 
-            await Search(text);
+            try {
+                _tokenSource = new CancellationTokenSource();
+                await Search(text, _tokenSource.Token);
+            }
+            catch (OperationCanceledException) {
+                // Ignore
+            }
 
             Status = "Finish";
 
             BtnExportIsEnabled = true;
             BtnSearchIsEnabled = true;
             BtnResetIsEnabled = true;
+            BtnCancelIsEnabled = false;
 
             MessageBox.Show("Suche erfolgreich beendet", "Success", MessageBoxButton.OK, MessageBoxImage.Asterisk);
         }
@@ -94,7 +104,7 @@ namespace LarchSys.Bot {
                     using var sw = new StreamWriter(fs, Encoding.UTF8);
 
                     await sw.WriteLineAsync(Row(
-                        "Kategorie", "Name", "Adresse Straße", "Adresse PLZ", "Adresse Gemeinde", "Adresse Zone", "Tel", "E-Mail", "Website", "Url"
+                        "Kategorie", "Name", "Adresse Straße", "Adresse PLZ", "Adresse Ort", "Adresse Gemeinde", "Adresse Zone", "Tel", "E-Mail", "Website", "Url", "Facebook"
                     ));
 
                     foreach (var _ in Results) {
@@ -102,13 +112,15 @@ namespace LarchSys.Bot {
                             _.Category,
                             _.Name,
                             _.Address.StreatLine,
-                            _.Address.ZipLine,
+                            _.Address.Zip,
+                            _.Address.Place,
                             _.Address.Community,
                             _.Address.Zone,
                             _.Tel,
                             _.Email,
                             _.Website,
-                            _.Url
+                            _.Url,
+                            _.Facebook
                         ));
                     }
 
@@ -138,6 +150,18 @@ namespace LarchSys.Bot {
         }
 
 
+        public virtual Task Cancel()
+        {
+            if (MessageBox.Show("Die Suche wirklich abbrechen?", "Abbrechen", MessageBoxButton.OKCancel) == MessageBoxResult.OK) {
+                _tokenSource?.Cancel();
+                BtnCancelIsEnabled = false;
+                BtnExportIsEnabled = true;
+            }
+
+            return Task.CompletedTask;
+        }
+
+
         #region Props
 
         private ObservableCollection<SearchResult> _results;
@@ -152,6 +176,8 @@ namespace LarchSys.Bot {
         private bool _btnSearchIsEnabled;
         private bool _btnExportIsEnabled;
         private bool _btnResetIsEnabled;
+        private bool _btnCancelIsEnabled;
+        private CancellationTokenSource _tokenSource;
 
         public bool BtnSearchIsEnabled {
             get => _btnSearchIsEnabled;
@@ -171,6 +197,13 @@ namespace LarchSys.Bot {
             get => _btnResetIsEnabled;
             set {
                 _btnResetIsEnabled = value;
+                OnPropertyChanged();
+            }
+        }
+        public bool BtnCancelIsEnabled {
+            get => _btnCancelIsEnabled;
+            set {
+                _btnCancelIsEnabled = value;
                 OnPropertyChanged();
             }
         }

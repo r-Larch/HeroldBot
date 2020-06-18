@@ -25,7 +25,8 @@
             <DockPanel Grid.Column="3" Margin="8 0 8 0" VerticalAlignment="Center">
                 <Button Margin="0 0 5 0" Name="BtnSearch" IsEnabled="{Binding BtnSearchIsEnabled}">Suchen</Button>
                 <Button Margin="0 0 5 0" Name="BtnExport" IsEnabled="{Binding BtnExportIsEnabled}">Exportieren</Button>
-                <Button Name="BtnReset" IsEnabled="{Binding BtnResetIsEnabled}">Reset</Button>
+                <Button Margin="0 0 5 0" Name="BtnReset" IsEnabled="{Binding BtnResetIsEnabled}">Reset</Button>
+                <Button Margin="0 0 0 0" Name="BtnCancel" IsEnabled="{Binding BtnCancelEnabled}">Abbrechen</Button>
             </DockPanel>
         </Grid>
 

@@ -41,12 +41,12 @@ namespace LarchSys.Bot {
         };
 
 
-        protected override async Task Search(string search)
+        protected override async Task Search(string search, CancellationToken token)
         {
             try {
                 Progress = 0;
 
-                var document = await GetPage(search);
+                var document = await GetPage(search, token: token);
                 AddResults(GetListItems(document).ToArray());
                 PageCount = GetPageCount(document);
 
@@ -55,7 +55,7 @@ namespace LarchSys.Bot {
                 foreach (var batch in Enumerable.Range(2, PageCount - 1).Batch(20)) {
                     await Task.WhenAll(
                         batch.Select(async pageNum => {
-                                var document = await GetPage(search, pageNum);
+                                var document = await GetPage(search, pageNum, token);
                                 AddResults(GetListItems(document).ToArray());
 
                                 Interlocked.Increment(ref page);
@@ -66,7 +66,7 @@ namespace LarchSys.Bot {
                 }
 
                 foreach (var batch in Results.Batch(20)) {
-                    await Task.WhenAll(batch.Select(ScanDetailPage));
+                    await Task.WhenAll(batch.Select(_ => ScanDetailPage(_, token)));
                 }
             }
             catch (Exception e) {
@@ -75,7 +75,7 @@ namespace LarchSys.Bot {
         }
 
 
-        private async Task<IDocument> GetPage(string searchText, int pageNum = 1)
+        private async Task<IDocument> GetPage(string searchText, int pageNum = 1, CancellationToken token = default)
         {
             var niceText = searchText.ToLower().Replace(" ", "-");
             var url = $"https://www.herold.at/gelbe-seiten/was_{niceText}/";
@@ -84,8 +84,8 @@ namespace LarchSys.Bot {
                 url += $"?page={pageNum}";
             }
 
-            var document = await Browser.OpenAsync(url);
             SearchedLinks.Add(url);
+            var document = await Browser.OpenAsync(url, cancellation: token);
             return document;
         }
 
@@ -108,19 +108,22 @@ namespace LarchSys.Bot {
                     Category = item.QuerySelector(".result-item-category").TextContent,
                     Address = Address.Parse(item.QuerySelector(".address").TextContent),
                     Tel = Regex.Replace(tel, @"^(\+\d{2})?(\d{3})(\d{4})(\d*)", "$1 $2 $3 $4").Trim(),
-                    Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src")
+                    Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src"),
+
+                    Website = null,
+                    Email = null,
                 };
             }
         }
 
 
-        private async Task ScanDetailPage(SearchResult result)
+        private async Task ScanDetailPage(SearchResult result, CancellationToken token)
         {
             if (string.IsNullOrEmpty(result.Url)) {
                 return;
             }
 
-            var doc = await Browser.OpenAsync(result.Url);
+            var doc = await Browser.OpenAsync(result.Url, cancellation: token);
 
             result.Email = doc.QuerySelector("[itemprop=\"email\"]")?.TextContent;
             result.Website = doc.QuerySelector("[data-category=\"Weblink\"]")?.GetAttribute("href");
@@ -130,7 +133,7 @@ namespace LarchSys.Bot {
         }
 
 
-        private void AddResults(SearchResult[] results)
+        protected void AddResults(SearchResult[] results)
         {
             // more efficient then Array.Concat
             var r = new SearchResult[Results.Count + results.Length];

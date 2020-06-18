@@ -22,6 +22,7 @@ namespace LarchSys.Bot {
             BtnSearch.Click += async (s, e) => await Spider.Search();
             BtnExport.Click += async (s, e) => await Spider.Export();
             BtnReset.Click += async (s, e) => await Spider.Reset();
+            BtnCancel.Click += async (s, e) => await Spider.Cancel();
 
             TxbSearch.KeyDown += async (s, e) => {
                 if (e.Key == Key.Enter) await Spider.Search();

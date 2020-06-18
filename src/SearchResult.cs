@@ -13,6 +13,7 @@ namespace LarchSys.Bot {
         public string Img { get; set; }
         public string Email { get; set; }
         public string Website { get; set; }
+        public string Facebook { get; set; }
     }
 
     public class Address {
