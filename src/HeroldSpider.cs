@@ -103,10 +103,10 @@ namespace LarchSys.Bot {
             foreach (var item in items) {
                 var tel = item.QuerySelector("a[data-category=\"Telefonnummer_result\"]")?.GetAttribute("href")?.Replace("tel:", "") ?? string.Empty;
                 yield return new SearchResult {
-                    Url = item.QuerySelector("meta[itemprop=\"url\"]").GetAttribute("content"),
-                    Name = item.QuerySelector("[itemprop=\"name\"]").TextContent,
-                    Category = item.QuerySelector(".result-item-category").TextContent,
-                    Address = Address.Parse(item.QuerySelector(".address").TextContent),
+                    Url = item.QuerySelector("meta[itemprop=\"url\"]")?.GetAttribute("content"),
+                    Name = item.QuerySelector("[itemprop=\"name\"]")?.TextContent?.Trim(),
+                    Category = item.QuerySelector(".heading")?.TextContent?.Trim(),
+                    Address = Address.Parse(item.QuerySelector(".address")?.TextContent),
                     Tel = Regex.Replace(tel, @"^(\+\d{2})?(\d{3})(\d{4})(\d*)", "$1 $2 $3 $4").Trim(),
                     Img = item.QuerySelector("[itemprop=\"image\"]")?.GetAttribute("src"),
 
@@ -125,7 +125,7 @@ namespace LarchSys.Bot {
 
             var doc = await Browser.OpenAsync(result.Url, cancellation: token);
 
-            result.Email = doc.QuerySelector("[itemprop=\"email\"]")?.TextContent;
+            result.Email = Regex.Replace(doc.QuerySelector("#companyBusinessCard .icon-mail")?.NextElementSibling?.GetAttribute("href")?.Trim() ?? string.Empty, @"mailto:([^?]*)\??.*", "$1");
             result.Website = doc.QuerySelector("[data-category=\"Weblink\"]")?.GetAttribute("href");
 
             DeepScanCount++;
