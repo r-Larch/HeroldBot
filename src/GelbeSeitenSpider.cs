@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -53,7 +52,7 @@ namespace LarchSys.Bot {
                 Progress = 0;
 
                 var document = await GetPage(search, token: token);
-                AddResults(GetListItems(document, token).ToArray());
+                AddResults(GetListItems(document).ToArray());
                 PageCount = GetPageCount(document);
 
                 var page = 1;
@@ -63,7 +62,7 @@ namespace LarchSys.Bot {
                     await Task.WhenAll(
                         batch.Select(async pageNum => {
                                 var document = await GetPage(search, pageNum, token);
-                                AddResults(GetListItems(document, token).ToArray());
+                                AddResults(GetListItems(document).ToArray());
 
                                 Interlocked.Increment(ref page);
                                 Progress = (int) ((page / (double) PageCount) * 100d);
@@ -116,7 +115,7 @@ namespace LarchSys.Bot {
         }
 
 
-        private IEnumerable<SearchResult> GetListItems(IDocument listPage, CancellationToken token)
+        private IEnumerable<SearchResult> GetListItems(IDocument listPage)
         {
             var items = listPage.QuerySelectorAll("#gs_treffer .mod-Treffer");
 
